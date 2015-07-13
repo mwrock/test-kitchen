@@ -24,9 +24,7 @@ require "uri"
 require "kitchen"
 
 module Kitchen
-
   module Transport
-
     # Wrapped exception for any internally raised WinRM-related errors.
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
@@ -38,22 +36,36 @@ module Kitchen
     # @author Salim Afiune <salim@afiunemaya.com.mx>
     # @author Fletcher Nichol <fnichol@nichol.ca>
     class Winrm < Kitchen::Transport::Base
-
       kitchen_transport_api_version 1
 
       plugin_version Kitchen::VERSION
 
-      default_config :port, 5985
       default_config :username, "administrator"
       default_config :password, nil
-      default_config :endpoint_template, "http://%{hostname}:%{port}/wsman"
       default_config :rdp_port, 3389
       default_config :connection_retries, 5
       default_config :connection_retry_sleep, 1
       default_config :max_wait_until_ready, 600
+      default_config :winrm_transport
+      default_config :port do |transport|
+        transport[:winrm_transport] == :ssl ? 5986 : 5985
+      end
+      default_config :endpoint_template do |transport|
+        scheme = transport[:winrm_transport] == :ssl ? "https" : "http"
+        "#{scheme}://%{hostname}:%{port}/wsman"
+      end
 
       # (see Base#connection)
       def connection(state, &block)
+        case config[:winrm_transport]
+        when "ssl"
+          config[:winrm_transport] = :ssl
+        when "sspinegotiate" && host_os_windows?
+          config[:winrm_transport] = :sspinegotiate
+        else
+          config[:winrm_transport] = :plaintext
+        end
+
         options = connection_options(config.to_hash.merge(state))
 
         if @connection && @connection_options == options
@@ -70,7 +82,6 @@ module Kitchen
       #
       # @author Fletcher Nichol <fnichol@nichol.ca>
       class Connection < Kitchen::Transport::Base::Connection
-
         # (see Base::Connection#close)
         def close
           return if @session.nil?
@@ -108,7 +119,7 @@ module Kitchen
           when /linux/
             login_command_for_linux
           else
-            raise ActionFailed, "Remote login not supported in #{self.class} " \
+            fail ActionFailed, "Remote login not supported in #{self.class} " \
               "from host OS '#{RbConfig::CONFIG["host_os"]}'."
           end
         end
@@ -122,9 +133,9 @@ module Kitchen
         def wait_until_ready
           delay = 3
           session(
-            :retries  => max_wait_until_ready / delay,
-            :delay    => delay,
-            :message  => "Waiting for WinRM service on #{endpoint}, " \
+            :retries => max_wait_until_ready / delay,
+            :delay => delay,
+            :message => "Waiting for WinRM service on #{endpoint}, " \
               "retrying in #{delay} seconds"
           )
           execute(PING_COMMAND.dup)
@@ -290,9 +301,9 @@ module Kitchen
         # @return [LoginCommand] a login command
         # @api private
         def login_command_for_linux
-          args  = %W[ -u #{options[:user]} ]
-          args += %W[ -p #{options[:pass]} ] if options.key?(:pass)
-          args += %W[ #{URI.parse(endpoint).host}:#{rdp_port} ]
+          args  = %W[-u #{options[:user]}]
+          args += %W[-p #{options[:pass]}] if options.key?(:pass)
+          args += %W[#{URI.parse(endpoint).host}:#{rdp_port}]
 
           LoginCommand.new("rdesktop", args)
         end
@@ -364,7 +375,7 @@ module Kitchen
         def session(retry_options = {})
           @session ||= establish_shell({
             :retries => connection_retries.to_i,
-            :delay   => connection_retry_sleep.to_i
+            :delay => connection_retry_sleep.to_i
           }.merge(retry_options))
         end
 
@@ -389,22 +400,36 @@ module Kitchen
       # @api private
       def connection_options(data)
         opts = {
-          :instance_name          => instance.name,
-          :kitchen_root           => data[:kitchen_root],
-          :logger                 => logger,
-          :winrm_transport        => :plaintext,
-          :disable_sspi           => true,
-          :basic_auth_only        => true,
-          :endpoint               => data[:endpoint_template] % data,
-          :user                   => data[:username],
-          :pass                   => data[:password],
-          :rdp_port               => data[:rdp_port],
-          :connection_retries     => data[:connection_retries],
+          :instance_name => instance.name,
+          :kitchen_root => data[:kitchen_root],
+          :logger => logger,
+          :endpoint => data[:endpoint_template] % data,
+          :user => data[:username],
+          :password => data[:password],
+          :rdp_port => data[:rdp_port],
+          :connection_retries => data[:connection_retries],
           :connection_retry_sleep => data[:connection_retry_sleep],
-          :max_wait_until_ready   => data[:max_wait_until_ready]
+          :max_wait_until_ready => data[:max_wait_until_ready],
+          :winrm_transport => data[:winrm_transport]
         }
-
+        opts.merge!(addition_transport_args(opts[:winrm_transport]))
         opts
+      end
+
+      def additional_transport_args(transport_type)
+        case transport_type
+        when :ssl, :sspinegotiate
+          {
+            :no_ssl_peer_verification => true,
+            :disable_sspi => false,
+            :basic_auth_only => false
+          }
+        when :plaintext
+          {
+            :disable_sspi => true,
+            :basic_auth_only => true
+          }
+        end
       end
 
       # Creates a new WinRM Connection instance and save it for potential
@@ -440,7 +465,7 @@ module Kitchen
           logger.debug("WinRM::Transport #{version} previously loaded")
         end
       rescue LoadError => e
-        logger.fatal("The `winrm-transport' gem is missing and must" \
+        logger.fatal("The `winrm-transport` gem is missing and must" \
           " be installed or cannot be properly activated. Run" \
           " `gem install winrm-transport --version '#{spec_version}'`" \
           " or add the following to your Gemfile if you are using Bundler:" \
@@ -452,8 +477,29 @@ module Kitchen
       # Load WinRM::Transport code.
       #
       # @api private
+      def host_os_windows?
+        case RbConfig::CONFIG["host_os"]
+        when /darwin/
+          false
+        when /mswin|msys|mingw|cygwin|bccwin|wince|emc/
+          true
+        when /linux/
+          false
+        else
+          false
+        end
+      end
+
+      def sspi_enabled?
+        enabled = host_os_windows? &&
+          config[:winrm_transport] == :sspinegotiate
+        logger.debug("Checking for Negotiate Auth: Enabled = #{enabled}")
+        enabled
+      end
+
       def load_winrm_transport!
         silence_warnings { require "winrm" }
+        silence_warnings { require "winrm-s" } if sspi_enabled?
         require "winrm/transport/shell_closer"
         require "winrm/transport/command_executor"
         require "winrm/transport/file_transporter"

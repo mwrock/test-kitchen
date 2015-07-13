@@ -8,6 +8,7 @@
 
 ### Improvements
 
+* PR [#776][] Support SSPINegotiate and SSL for the WinRM transport. ([@smurawski][])
 * PR [#689][]: Fixing tests to run on Windows and adding AppVeyor builds. ([@tyler-ball][] and [@smurawski][])
 
 ## 1.4.1 / 2015-06-18
@@ -757,6 +758,7 @@ The initial release.
 [#674]: https://github.com/test-kitchen/test-kitchen/issues/674
 [#675]: https://github.com/test-kitchen/test-kitchen/issues/675
 [#688]: https://github.com/test-kitchen/test-kitchen/issues/688
+[#689]: https://github.com/test-kitchen/test-kitchen/issues/689
 [#704]: https://github.com/test-kitchen/test-kitchen/issues/704
 [#711]: https://github.com/test-kitchen/test-kitchen/issues/711
 [#728]: https://github.com/test-kitchen/test-kitchen/issues/728
@@ -764,6 +766,7 @@ The initial release.
 [#734]: https://github.com/test-kitchen/test-kitchen/issues/734
 [#736]: https://github.com/test-kitchen/test-kitchen/issues/736
 [#737]: https://github.com/test-kitchen/test-kitchen/issues/737
+[#776]: https://github.com/test-kitchen/test-kitchen/issues/776
 [@ChrisLundquist]: https://github.com/ChrisLundquist
 [@MarkGibbons]: https://github.com/MarkGibbons
 [@adamhjk]: https://github.com/adamhjk
@@ -836,6 +839,7 @@ The initial release.
 [@someara]: https://github.com/someara
 [@srenatus]: https://github.com/srenatus
 [@stevendanna]: https://github.com/stevendanna
+[@smurawski]: https://githumb.com/smurawski
 [@thommay]: https://github.com/thommay
 [@tknerr]: https://github.com/tknerr
 [@tyler-ball]: https://github.com/tyler-ball
