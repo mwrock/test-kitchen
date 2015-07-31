@@ -405,7 +405,7 @@ module Kitchen
           :logger => logger,
           :endpoint => data[:endpoint_template] % data,
           :user => data[:username],
-          :password => data[:password],
+          :pass => data[:password],
           :rdp_port => data[:rdp_port],
           :connection_retries => data[:connection_retries],
           :connection_retry_sleep => data[:connection_retry_sleep],
@@ -465,7 +465,7 @@ module Kitchen
           logger.debug("WinRM::Transport #{version} previously loaded")
         end
       rescue LoadError => e
-        logger.fatal("The `winrm-transport` gem is missing and must" \
+        logger.fatal("The `winrm-transport' gem is missing and must" \
           " be installed or cannot be properly activated. Run" \
           " `gem install winrm-transport --version '#{spec_version}'`" \
           " or add the following to your Gemfile if you are using Bundler:" \
