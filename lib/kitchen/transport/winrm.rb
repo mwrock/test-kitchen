@@ -412,7 +412,7 @@ module Kitchen
           :max_wait_until_ready => data[:max_wait_until_ready],
           :winrm_transport => data[:winrm_transport]
         }
-        opts.merge!(addition_transport_args(opts[:winrm_transport]))
+        opts.merge!(additional_transport_args(opts[:winrm_transport]))
         opts
       end
 
