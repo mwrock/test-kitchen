@@ -141,7 +141,7 @@ describe Kitchen::Provisioner::ChefBase do
 
     before do
       platform.stubs(:shell_type).returns("bourne")
-      Mixlib::Install.stubs(:new).returns(installer)
+      Mixlib::Install::ScriptGenerator.stubs(:new).returns(installer)
     end
 
     let(:installer) { stub(:root => "/rooty", :install_command => "make_it_so") }
