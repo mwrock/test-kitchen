@@ -288,29 +288,41 @@ module Kitchen
         # by default require_chef_omnibus is set to true. Check config[:product_name] first
         # so that we can use it if configured.
         if config[:product_name]
-          installer = Mixlib::Install.new({
-            product_name: config[:product_name],
-            product_version: config[:product_version],
-            channel: config[:channel].to_sym || :stable
-          }.tap do |opts|
-            opts[:shell_type] = :ps1 if powershell_shell?
-            opts[:architecture] = config[:architecture] if config[:architecture]
-          end)
-          config[:chef_omnibus_root] = installer.root
-          installer.install_command
+          script_for_product
         elsif config[:require_chef_omnibus]
-          version = config[:require_chef_omnibus].to_s.downcase
-
-          # Passing "true" to mixlib-install currently breaks the windows metadata_url
-          # TODO: remove this line once https://github.com/chef/mixlib-install/pull/75
-          # is accepted and released
-          version = "" if version == "true" && powershell_shell?
-
-          installer = Mixlib::Install::ScriptGenerator.new(
-            version, powershell_shell?, install_options)
-          config[:chef_omnibus_root] = installer.root
-          installer.install_command
+          script_for_omnibus_version
         end
+      end
+
+      # @return [String] contents of product based install script
+      # @api private
+      def script_for_product
+        installer = Mixlib::Install.new({
+          :product_name => config[:product_name],
+          :product_version => config[:product_version],
+          :channel => config[:channel].to_sym || :stable
+        }.tap do |opts|
+          opts[:shell_type] = :ps1 if powershell_shell?
+          opts[:architecture] = config[:architecture] if config[:architecture]
+        end)
+        config[:chef_omnibus_root] = installer.root
+        installer.install_command
+      end
+
+      # @return [String] contents of version based install script
+      # @api private
+      def script_for_omnibus_version
+        version = config[:require_chef_omnibus].to_s.downcase
+
+        # Passing "true" to mixlib-install currently breaks the windows metadata_url
+        # TODO: remove this line once https://github.com/chef/mixlib-install/pull/75
+        # is accepted and released
+        version = "" if version == "true" && powershell_shell?
+
+        installer = Mixlib::Install::ScriptGenerator.new(
+          version, powershell_shell?, install_options)
+        config[:chef_omnibus_root] = installer.root
+        installer.install_command
       end
     end
   end
