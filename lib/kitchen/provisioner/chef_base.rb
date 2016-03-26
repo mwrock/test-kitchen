@@ -306,7 +306,8 @@ module Kitchen
           # is accepted and released
           version = "" if version == "true" && powershell_shell?
 
-          installer = Mixlib::Install::ScriptGenerator.new(version, powershell_shell?, install_options)
+          installer = Mixlib::Install::ScriptGenerator.new(
+            version, powershell_shell?, install_options)
           config[:chef_omnibus_root] = installer.root
           installer.install_command
         end
