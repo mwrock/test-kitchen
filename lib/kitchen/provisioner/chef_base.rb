@@ -306,7 +306,7 @@ module Kitchen
           opts[:architecture] = config[:architecture] if config[:architecture]
         end)
         config[:chef_omnibus_root] = installer.root
-        installer.install_command
+        installer.install_command.gsub("dpkg -i", sudo("dpkg -i"))
       end
 
       # @return [String] contents of version based install script
