@@ -3,13 +3,28 @@ language: ruby
 rvm:
   - 2.2.4
   - 2.1.8
-  - 2.0.0
   - ruby-head
 
+env:
+  - global:
+    - machine_user=travis
+    - machine_pass=travis
+    - machine_port=22
+    - KITCHEN_YAML=.kitchen.ci.yml
+
 before_install:
+  - sudo usermod -p "`openssl passwd -1 'travis'`" travis
   - gem --version
 
 bundler_args: --without guard
+
+script:
+  - bundle exec rake
+  - bundle exec kitchen verify ubuntu
+
+branches:
+  only:
+  - master
 
 sudo: false
 
@@ -26,8 +41,6 @@ matrix:
         - sudo apt-get update
         - sudo apt-get -y install squid3 git curl
       env:
-        # ENV['AWS_ACCESS_KEY_ID'], ENV['AWS_SECRET_ACCESS_KEY']
-        - secure: "E7h427Y8z6Nx5sdrA4Ye9gO9pDGpe4jxfhJdM4HPJIM/FSkEJM0ZDPdvhQ6QAQ1S1AHja/JhQUFaNP5NzKhRkVqGCzunBBC6RVb7pp1Qo16EMhJkg7LEsExiSsjQykAzt2w6K/71V+mIlMKxCPYdpu6PT/8w/jZFgBqLEHXuogU="
         - global:
           - PROXY_TESTS_DIR=proxy_tests/files/default/scripts
           - PROXY_TESTS_REPO=$PROXY_TESTS_DIR/repo
