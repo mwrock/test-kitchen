@@ -12,6 +12,9 @@ env:
     - machine_port=22
     - KITCHEN_YAML=.kitchen.ci.yml
 
+sudo: required
+dist: trusty
+
 before_install:
   - sudo usermod -p "`openssl passwd -1 'travis'`" travis
   - gem --version
@@ -31,8 +34,6 @@ sudo: false
 matrix:
   include:
     - rvm: 2.2.4
-      sudo: required
-      dist: trusty
       # To run the proxy tests we need additional gems than what Test Kitchen normally uses
       # for testing
       gemfile: Gemfile.proxy_tests
